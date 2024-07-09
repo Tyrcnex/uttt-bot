@@ -67,11 +67,15 @@ pub fn uct_policy(wins: u32, visits: u32, parent_visits: u32) -> f32 {
 impl Node {
     pub fn select(&self, tree: &Tree) -> usize {
         let tup_range = self.children.unwrap();
-        let total_uct: Vec<f32> = tree.0[tup_range.0..tup_range.1]
-            .iter()
-            .map(|x| uct_policy(x.wins, x.visits, self.visits))
-            .collect();
-        let dist = WeightedIndex::new(total_uct).unwrap();
+        let mut v = Vec::with_capacity(tup_range.1 - tup_range.0);
+        for (idx, node) in tree.0[tup_range.0..tup_range.1].iter().enumerate() {
+            if node.visits == 0 {
+                return idx;
+            } else {
+                v.push(uct_policy(node.wins, node.visits, self.visits))
+            }
+        }
+        let dist = WeightedIndex::new(&v).unwrap();
         let mut rng = thread_rng();
         self.children.unwrap().0 + dist.sample(&mut rng)
     }
