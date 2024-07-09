@@ -67,13 +67,16 @@ pub fn uct_policy(wins: u32, visits: u32, parent_visits: u32) -> f32 {
 impl Node {
     pub fn select(&self, tree: &Tree) -> usize {
         let tup_range = self.children.unwrap();
+        if tup_range.1 - tup_range.0 <= 1 {
+            return tup_range.0;
+        }
         let total_uct: Vec<f32> = tree.0[tup_range.0..tup_range.1]
             .iter()
             .map(|x| uct_policy(x.wins, x.visits, self.visits))
             .collect();
         let dist = WeightedIndex::new(&total_uct).unwrap();
         let mut rng = thread_rng();
-        self.children.unwrap().0 + dist.sample(&mut rng)
+        tup_range.0 + dist.sample(&mut rng)
     }
 }
 
@@ -86,7 +89,7 @@ pub fn bot_move(board: &Board, last_move: Move) -> Move {
         children: None,
     }]);
 
-    for _ in 0..1000 {
+    for _ in 0..10000 {
         let mut new_board = board.clone();
 
         // selection
@@ -171,7 +174,7 @@ pub fn bot_move(board: &Board, last_move: Move) -> Move {
 
     let tup_range = mcts_tree[0].children.unwrap();
     let mut node_max_visits: Node = mcts_tree[1];
-    for &node in mcts_tree.0[tup_range.0..=tup_range.1].iter() {
+    for &node in mcts_tree.0[tup_range.0..tup_range.1].iter() {
         if node.visits > node_max_visits.visits {
             node_max_visits = node;
         }
