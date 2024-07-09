@@ -55,13 +55,9 @@ impl IndexMut<usize> for Tree {
 }
 
 pub fn uct_policy(wins: u32, visits: u32, parent_visits: u32) -> f32 {
-    if visits == 0 {
-        999999999999f32
-    } else {
-        let mean_action_value = (wins as f32) / (visits as f32);
-        let explore_factor = ((parent_visits as f32).ln() / (visits as f32)).sqrt();
-        mean_action_value + 1.4 * explore_factor
-    }
+    let mean_action_value = (wins as f32) / (visits as f32);
+    let explore_factor = ((parent_visits as f32).ln() / (visits as f32)).sqrt();
+    mean_action_value + 1.4 * explore_factor
 }
 
 impl Node {
