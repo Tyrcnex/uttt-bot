@@ -26,7 +26,7 @@ impl Tree {
     pub fn expand(&mut self, node_idx: usize, board: &Board) {
         let node = self[node_idx];
         let legal_moves = board.get_legal_moves();
-        if legal_moves.len() == 0 {
+        if legal_moves.is_empty() {
             return;
         }
         let extended_nodes = self.extend_nodes(legal_moves.iter().map(|x| Node {
@@ -71,7 +71,7 @@ impl Node {
             .iter()
             .map(|x| uct_policy(x.wins, x.visits, self.visits))
             .collect();
-        let dist = WeightedIndex::new(&total_uct).unwrap();
+        let dist = WeightedIndex::new(total_uct).unwrap();
         let mut rng = thread_rng();
         self.children.unwrap().0 + dist.sample(&mut rng)
     }
@@ -87,7 +87,7 @@ pub fn bot_move(board: &Board, last_move: Move) -> Move {
     }]);
 
     for _ in 0..1000 {
-        let mut new_board = board.clone();
+        let mut new_board = *board;
 
         // selection
         let mut node_path: Vec<usize> = vec![0];
@@ -111,7 +111,7 @@ pub fn bot_move(board: &Board, last_move: Move) -> Move {
 
         // expansion
         let leaf_idx = node_path[node_path.len() - 1];
-        mcts_tree.expand(leaf_idx as usize, &new_board);
+        mcts_tree.expand(leaf_idx, &new_board);
 
         node_path.push(mcts_tree[leaf_idx].children.unwrap().0);
         new_board.place(mcts_tree[leaf_idx].node_move);
@@ -126,7 +126,7 @@ pub fn bot_move(board: &Board, last_move: Move) -> Move {
             }
 
             let legal_moves = new_board.get_legal_moves();
-            if legal_moves.len() == 0 {
+            if legal_moves.is_empty() {
                 panic!("nooooo no legal moves noooooooo");
             }
             let rng_index = rng.gen_range(0..legal_moves.len());
@@ -142,7 +142,7 @@ pub fn bot_move(board: &Board, last_move: Move) -> Move {
         }
 
         // backpropagation
-        let this_side = (&mcts_tree[leaf_idx]).side;
+        let this_side = mcts_tree[leaf_idx].side;
         let this_side_score: u32 = if outcome == Outcome::Draw {
             1
         } else if outcome == this_side {
