@@ -146,20 +146,13 @@ pub fn bot_move(board: &Board, last_move: Move) -> Move {
 
         // backpropagation
         let this_side = mcts_tree[leaf_idx].side;
-        let this_side_score: u32 = if outcome == Outcome::Draw {
-            1
-        } else if outcome == this_side {
-            2
-        } else {
-            0
+        let (this_side_score, opponent_score) = match outcome {
+            Outcome::Draw => (1, 1),
+            o if o == this_side => (2, 0),
+            //Only other case is not this side, opponent wins
+            _ => (0, 2),
         };
-        let opponent_score: u32 = if outcome == Outcome::Draw {
-            1
-        } else if outcome == this_side.swap() {
-            2
-        } else {
-            0
-        };
+
         let toggle = true;
         for &i in node_path.iter() {
             let node = &mut mcts_tree[i];
