@@ -63,10 +63,11 @@ pub fn uct_policy(wins: u32, visits: u32, parent_visits: u32) -> f32 {
 impl Node {
     pub fn select(&self, tree: &Tree) -> usize {
         let tup_range = self.children.unwrap();
-        if tup_range.1 - tup_range.0 <= 1 {
+        let range_len = tup_range.1 - tup_range.0;
+        if range_len <= 1 {
             return tup_range.0;
         }
-        let mut v = Vec::with_capacity(tup_range.1 - tup_range.0);
+        let mut v = Vec::with_capacity(range_len);
         for (idx, node) in tree.0[tup_range.0..tup_range.1].iter().enumerate() {
             if node.visits == 0 {
                 return idx;
