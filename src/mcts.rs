@@ -149,28 +149,33 @@ pub fn bot_move(board: &Board, last_move: Move) -> Move {
         let (this_side_score, opponent_score) = match outcome {
             Outcome::Draw => (1, 1),
             o if o == this_side => (2, 0),
-            //Only other case is not this side, opponent wins
+            // Only other case is not this side, opponent wins
             _ => (0, 2),
         };
 
         let toggle = true;
-        for &i in node_path.iter() {
-            let node = &mut mcts_tree[i];
-            node.visits += 1;
-            node.wins += if toggle {
+        node_path.iter().for_each(|&idx| {
+            let re = &mut mcts_tree[idx];
+            re.visits += 1;
+            re.wins += if toggle {
                 this_side_score
             } else {
                 opponent_score
             };
-        }
+        });
     }
 
     let tup_range = mcts_tree[0].children.unwrap();
-    let mut node_max_visits: Node = mcts_tree[1];
-    for &node in mcts_tree.0[tup_range.0..tup_range.1].iter() {
-        if node.visits > node_max_visits.visits {
-            node_max_visits = node;
-        }
-    }
+    let node_max_visits =
+        mcts_tree.0[tup_range.0..tup_range.1]
+            .iter()
+            .fold(mcts_tree[1], |max, candidate| {
+                if candidate.visits > max.visits {
+                    *candidate
+                } else {
+                    max
+                }
+            });
+
     node_max_visits.node_move
 }
