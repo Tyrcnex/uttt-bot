@@ -9,8 +9,12 @@ edition = "2021"
 rand = "0.8.5"
 
 [dev-dependencies]
-criterion = {version = "0.3", features = ["html_reports"]}
+criterion = { version = "0.3", features = ["html_reports"] }
 
 [[bench]]
 name = "uttt_benchmark"
 harness = false
+
+[profile.release]
+lto = "fat"
+codegen-units = 1

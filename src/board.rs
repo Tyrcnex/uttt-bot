@@ -56,13 +56,13 @@ pub struct Board {
     pub current_square: Option<u8>,
     pub square_states: [Outcome; 9],
 }
-
+#[inline]
 fn is_winning(square: u16) -> bool {
     WIN_STATES
         .iter()
         .any(|win_state| (square & win_state) == *win_state)
 }
-
+#[inline]
 fn squares_to_move(s_idx: u8, square: u16) -> Vec<Move> {
     (0u8..=8)
         .filter(|x| (square & (1 << x)) == 0)
@@ -130,7 +130,7 @@ impl Board {
             .enumerate()
             .fold(0u16, |a, (idx, val)| a | ((val == outcome) as u16) << idx)
     }
-
+    #[inline]
     pub fn check_board_outcome(&self) -> Outcome {
         if is_winning(self.states_to_u16(Outcome::X)) {
             Outcome::X
@@ -142,7 +142,7 @@ impl Board {
             Outcome::Undecided
         }
     }
-
+    #[inline]
     pub fn get_legal_moves(&self) -> Vec<Move> {
         if self.check_board_outcome() != Outcome::Undecided {
             return vec![];
