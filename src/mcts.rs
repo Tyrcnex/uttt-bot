@@ -68,7 +68,11 @@ impl Node {
             return tup_range.0;
         }
         let mut v = Vec::with_capacity(range_len);
-        for (idx, node) in tree.0[tup_range.0..tup_range.1].iter().enumerate().map(|(idx, node)| (idx + tup_range.0, node)) {
+        for (idx, node) in tree.0[tup_range.0..tup_range.1]
+            .iter()
+            .enumerate()
+            .map(|(idx, node)| (idx + tup_range.0, node))
+        {
             if node.visits == 0 {
                 return idx;
             } else {
