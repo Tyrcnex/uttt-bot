@@ -26,7 +26,7 @@ impl Tree {
     pub fn expand(&mut self, node_idx: usize, board: &Board) {
         let node = self[node_idx];
         let legal_moves = board.get_legal_moves();
-        if legal_moves.len() == 0 {
+        if legal_moves.is_empty() {
             return;
         }
         let extended_nodes = self.extend_nodes(legal_moves.iter().map(|x| Node {
@@ -55,26 +55,27 @@ impl IndexMut<usize> for Tree {
 }
 
 pub fn uct_policy(wins: u32, visits: u32, parent_visits: u32) -> f32 {
-    if visits == 0 {
-        999999999999f32
-    } else {
-        let mean_action_value = (wins as f32) / (visits as f32);
-        let explore_factor = ((parent_visits as f32).ln() / (visits as f32)).sqrt();
-        mean_action_value + 1.4 * explore_factor
-    }
+    let mean_action_value = (wins as f32) / (visits as f32);
+    let explore_factor = ((parent_visits as f32).ln() / (visits as f32)).sqrt();
+    mean_action_value + 1.4 * explore_factor
 }
 
 impl Node {
     pub fn select(&self, tree: &Tree) -> usize {
         let tup_range = self.children.unwrap();
-        if tup_range.1 - tup_range.0 <= 1 {
+        let range_len = tup_range.1 - tup_range.0;
+        if range_len <= 1 {
             return tup_range.0;
         }
-        let total_uct: Vec<f32> = tree.0[tup_range.0..tup_range.1]
-            .iter()
-            .map(|x| uct_policy(x.wins, x.visits, self.visits))
-            .collect();
-        let dist = WeightedIndex::new(&total_uct).unwrap();
+        let mut v = Vec::with_capacity(range_len);
+        for (idx, node) in tree.0[tup_range.0..tup_range.1].iter().enumerate() {
+            if node.visits == 0 {
+                return idx;
+            } else {
+                v.push(uct_policy(node.wins, node.visits, self.visits))
+            }
+        }
+        let dist = WeightedIndex::new(&v).unwrap();
         let mut rng = thread_rng();
         tup_range.0 + dist.sample(&mut rng)
     }
@@ -90,7 +91,7 @@ pub fn bot_move(board: &Board, last_move: Move) -> Move {
     }]);
 
     for _ in 0..10000 {
-        let mut new_board = board.clone();
+        let mut new_board = *board;
 
         // selection
         let mut node_path: Vec<usize> = vec![0];
@@ -114,7 +115,7 @@ pub fn bot_move(board: &Board, last_move: Move) -> Move {
 
         // expansion
         let leaf_idx = node_path[node_path.len() - 1];
-        mcts_tree.expand(leaf_idx as usize, &new_board);
+        mcts_tree.expand(leaf_idx, &new_board);
 
         node_path.push(mcts_tree[leaf_idx].children.unwrap().0);
         new_board.place(mcts_tree[leaf_idx].node_move);
@@ -129,7 +130,7 @@ pub fn bot_move(board: &Board, last_move: Move) -> Move {
             }
 
             let legal_moves = new_board.get_legal_moves();
-            if legal_moves.len() == 0 {
+            if legal_moves.is_empty() {
                 panic!("nooooo no legal moves noooooooo");
             }
             let rng_index = rng.gen_range(0..legal_moves.len());
@@ -145,39 +146,37 @@ pub fn bot_move(board: &Board, last_move: Move) -> Move {
         }
 
         // backpropagation
-        let this_side = (&mcts_tree[leaf_idx]).side;
-        let this_side_score: u32 = if outcome == Outcome::Draw {
-            1
-        } else if outcome == this_side {
-            2
-        } else {
-            0
+        let this_side = mcts_tree[leaf_idx].side;
+        let (this_side_score, opponent_score) = match outcome {
+            Outcome::Draw => (1, 1),
+            o if o == this_side => (2, 0),
+            // Only other case is not this side, opponent wins
+            _ => (0, 2),
         };
-        let opponent_score: u32 = if outcome == Outcome::Draw {
-            1
-        } else if outcome == this_side.swap() {
-            2
-        } else {
-            0
-        };
+
         let toggle = true;
-        for &i in node_path.iter() {
-            let node = &mut mcts_tree[i];
-            node.visits += 1;
-            node.wins += if toggle {
+        node_path.iter().for_each(|&idx| {
+            let re = &mut mcts_tree[idx];
+            re.visits += 1;
+            re.wins += if toggle {
                 this_side_score
             } else {
                 opponent_score
             };
-        }
+        });
     }
 
     let tup_range = mcts_tree[0].children.unwrap();
-    let mut node_max_visits: Node = mcts_tree[1];
-    for &node in mcts_tree.0[tup_range.0..tup_range.1].iter() {
-        if node.visits > node_max_visits.visits {
-            node_max_visits = node;
-        }
-    }
+    let node_max_visits =
+        mcts_tree.0[tup_range.0..tup_range.1]
+            .iter()
+            .fold(mcts_tree[1], |max, candidate| {
+                if candidate.visits > max.visits {
+                    *candidate
+                } else {
+                    max
+                }
+            });
+
     node_max_visits.node_move
 }

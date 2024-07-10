@@ -179,7 +179,7 @@ impl Board {
                     " "
                 });
                 if col % 3 == 2 {
-                    my_str.push_str("|");
+                    my_str.push('|');
                 }
             }
             println!("{my_str}");
