@@ -16,9 +16,13 @@ fn main() {
     
     let mut last_move = Move { tile: 4, square: 4 };
     board.place(last_move);
+    
+    let mut all_moves = vec![last_move];
 
     while board.check_board_outcome() == Outcome::Undecided {
+    // while board.current_square.is_some() {
         last_move = bot_move(&board, last_move);
+        all_moves.push(last_move);
         board.place(last_move);
         println!("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
         board.draw_board();

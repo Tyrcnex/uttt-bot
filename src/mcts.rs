@@ -68,7 +68,7 @@ impl Node {
             return tup_range.0;
         }
         let mut v = Vec::with_capacity(range_len);
-        for (idx, node) in tree.0[tup_range.0..tup_range.1].iter().enumerate() {
+        for (idx, node) in tree.0[tup_range.0..tup_range.1].iter().enumerate().map(|(idx, node)| (idx + tup_range.0, node)) {
             if node.visits == 0 {
                 return idx;
             } else {
@@ -90,7 +90,7 @@ pub fn bot_move(board: &Board, last_move: Move) -> Move {
         children: None,
     }]);
 
-    for _ in 0..10000 {
+    for _ in 0..100000 {
         let mut new_board = *board;
 
         // selection
@@ -154,7 +154,7 @@ pub fn bot_move(board: &Board, last_move: Move) -> Move {
             _ => (0, 2),
         };
 
-        let toggle = true;
+        let mut toggle = true;
         node_path.iter().for_each(|&idx| {
             let re = &mut mcts_tree[idx];
             re.visits += 1;
@@ -163,6 +163,7 @@ pub fn bot_move(board: &Board, last_move: Move) -> Move {
             } else {
                 opponent_score
             };
+            toggle = !toggle;
         });
     }
 
